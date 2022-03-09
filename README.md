@@ -1,13 +1,13 @@
-# vn.py框架的ROHON底层接口
+# VeighNa框架的ROHON底层接口
 
 <p align="center">
   <img src ="https://vnpy.oss-cn-shanghai.aliyuncs.com/vnpy-logo.png"/>
 </p>
 
 <p align="center">
-    <img src ="https://img.shields.io/badge/version-6.5.1.0-blueviolet.svg"/>
+    <img src ="https://img.shields.io/badge/version-6.5.1.2-blueviolet.svg"/>
     <img src ="https://img.shields.io/badge/platform-windows|linux-yellow.svg"/>
-    <img src ="https://img.shields.io/badge/python-3.7-blue.svg" />
+    <img src ="https://img.shields.io/badge/python-3.7|3.8|3.9|3.10-blue.svg" />
     <img src ="https://img.shields.io/github/license/vnpy/vnpy.svg?color=orange"/>
 </p>
 
@@ -17,6 +17,8 @@
 
 ## 安装
 
+安装环境推荐基于3.0.0版本以上的【[**VeighNa Studio**](https://www.vnpy.com)】。
+
 直接使用pip命令：
 
 ```
@@ -24,11 +26,13 @@ pip install vnpy_rohon
 ```
 
 
-或者下载解压后在cmd中运行：
+或者下载源代码后，解压后在cmd中运行：
 
 ```
-python setup.py install
+pip install .
 ```
+
+使用源代码安装时需要进行C++编译，因此在执行上述命令之前请确保已经安装了【Visual Studio（Windows）】或者【GCC（Linux）】编译器。
 
 ## 使用
 
@@ -59,3 +63,7 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+## 连接
+ 
+如果启动时报错“ImportError: DLL load failed: 找不到指定的模块。”，可自行下载vcredist2010解决。
