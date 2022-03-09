@@ -64,7 +64,7 @@ from vnpy.trader.object import (
 )
 from vnpy.trader.utility import get_folder_path
 from vnpy.trader.event import EVENT_TIMER
-from typing import Dict, List
+from typing import Dict, List, Set
 import sys
 from vnpy.event.engine import EventEngine
 
@@ -137,8 +137,10 @@ symbol_contract_map: Dict[str, ContractData] = {}
 
 class RohonGateway(BaseGateway):
     """
-    vn.py用于对接融航资管中台的交易接口。
+    VeighNa用于对接融航资管中台的交易接口。
     """
+
+    default_name: str = "ROHON"
 
     default_setting: Dict[str, str] = {
         "用户名": "",
@@ -152,7 +154,7 @@ class RohonGateway(BaseGateway):
 
     exchanges: List[str] = list(EXCHANGE_ROHON2VT.values())
 
-    def __init__(self, event_engine: EventEngine, gateway_name: str = "ROHON") -> None:
+    def __init__(self, event_engine: EventEngine, gateway_name: str) -> None:
         """构造函数"""
         super().__init__(event_engine, gateway_name)
 
@@ -243,7 +245,7 @@ class RohonMdApi(MdApi):
 
         self.connect_status: bool = False
         self.login_status: bool = False
-        self.subscribed: List[str] = set()
+        self.subscribed: Set = set()
 
         self.userid: str = ""
         self.password: str = ""
@@ -283,6 +285,10 @@ class RohonMdApi(MdApi):
 
     def onRtnDepthMarketData(self, data: dict) -> None:
         """行情数据推送"""
+        # 过滤没有时间戳的异常行情数据
+        if not data["UpdateTime"]:
+            return
+
         symbol: str = data["InstrumentID"]
         contract: ContractData = symbol_contract_map.get(symbol, None)
         if not contract:
@@ -322,8 +328,8 @@ class RohonMdApi(MdApi):
 
         # 禁止重复发起连接，会导致异常崩溃
         if not self.connect_status:
-            path = get_folder_path(self.gateway_name.lower() + "\\" + self.userid.lower())
-            self.createFtdcMdApi(str(path) + "\\Md")
+            path = get_folder_path(self.gateway_name.lower())
+            self.createFtdcMdApi((str(path) + "\\Md").encode("GBK"))
 
             self.registerFront(address)
             self.init()
@@ -558,9 +564,16 @@ class RohonTdApi(TdApi):
 
             # 期权相关
             if contract.product == Product.OPTION:
+                # 移除郑商所期权产品名称带有的C/P后缀
+                if contract.exchange == Exchange.CZCE:
+                    contract.option_portfolio = data["ProductID"][:-1]
+                else:
+                    contract.option_portfolio = data["ProductID"]
+
                 contract.option_underlying = data["UnderlyingInstrID"]
                 contract.option_type = OPTIONTYPE_ROHON2VT.get(data["OptionsType"], None)
                 contract.option_strike = data["StrikePrice"]
+                contract.option_index = str(data["StrikePrice"])
                 contract.option_expiry = datetime.strptime(data["ExpireDate"], "%Y%m%d")
 
             self.gateway.on_contract(contract)
@@ -661,8 +674,8 @@ class RohonTdApi(TdApi):
         self.appid = appid
 
         if not self.connect_status:
-            path = get_folder_path(self.gateway_name.lower() + "\\" + self.userid.lower())
-            self.createFtdcTraderApi(str(path) + "\\Td")
+            path = get_folder_path(self.gateway_name.lower())
+            self.createFtdcTraderApi((str(path) + "\\Td").encode("GBK"))
 
             self.subscribePrivateTopic(0)
             self.subscribePublicTopic(0)
